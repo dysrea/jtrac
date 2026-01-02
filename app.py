@@ -49,3 +49,30 @@ if os.path.exists(DB_FILE):
     # Simple Stats
 
     st.metric("Total Applications", len(df))
+
+# --- SECTION 3: DELETE JOBS ---
+with st.expander("Manage & Delete Jobs"):
+    if os.path.exists(DB_FILE):
+        # Load current data
+        df = pd.read_csv(DB_FILE)
+        
+        # Create a dropdown to select companies to delete
+        # We use a list of "Company - Role" so you don't accidentally delete the wrong "Google" entry
+        job_list = [f"{row['Company']} - {row['Role']}" for index, row in df.iterrows()]
+        selected_to_delete = st.multiselect("Select jobs to delete:", job_list)
+        
+        if st.button("❌ Delete Selected Jobs"):
+            if selected_to_delete:
+                # Logic: Keep rows that are NOT in the selected list
+                # We rebuild the string identifier to match
+                df['id_temp'] = df['Company'] + " - " + df['Role']
+                df = df[~df['id_temp'].isin(selected_to_delete)]
+                df = df.drop(columns=['id_temp'])
+                
+                # Save back to CSV
+                df.to_csv(DB_FILE, index=False)
+                st.success("Deleted successfully!")
+                st.rerun()
+            else:
+                st.warning("Select a job first.")
+
