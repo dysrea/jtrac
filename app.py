@@ -10,7 +10,7 @@ if not os.path.exists(DB_FILE):
     df = pd.DataFrame(columns=["Company", "Role", "Status", "Date", "Notes"])
     df.to_csv(DB_FILE, index=False)
 
-st.title("🚀 Job Hunt Tracker")
+st.title("J.TRAC")
 
 # --- SECTION 1: ADD NEW JOB ---
 with st.expander("Add New Application", expanded=True):
@@ -47,4 +47,5 @@ if os.path.exists(DB_FILE):
     st.dataframe(view_df, use_container_width=True)
 
     # Simple Stats
+
     st.metric("Total Applications", len(df))
