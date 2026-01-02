@@ -50,29 +50,56 @@ if os.path.exists(DB_FILE):
 
     st.metric("Total Applications", len(df))
 
-# --- SECTION 3: DELETE JOBS ---
-with st.expander("Manage & Delete Jobs"):
+# --- SECTION 3: DATA MANAGEMENT (Save & Restore) ---
+with st.expander("⚙️ Manage Data (Delete / Restore)"):
+    
+    # TAB 1: DELETE JOBS
+    st.subheader("❌ Delete Jobs")
     if os.path.exists(DB_FILE):
-        # Load current data
         df = pd.read_csv(DB_FILE)
-        
-        # Create a dropdown to select companies to delete
-        # We use a list of "Company - Role" so you don't accidentally delete the wrong "Google" entry
         job_list = [f"{row['Company']} - {row['Role']}" for index, row in df.iterrows()]
         selected_to_delete = st.multiselect("Select jobs to delete:", job_list)
         
-        if st.button("❌ Delete Selected Jobs"):
+        if st.button("Confirm Delete"):
             if selected_to_delete:
-                # Logic: Keep rows that are NOT in the selected list
-                # We rebuild the string identifier to match
                 df['id_temp'] = df['Company'] + " - " + df['Role']
                 df = df[~df['id_temp'].isin(selected_to_delete)]
                 df = df.drop(columns=['id_temp'])
-                
-                # Save back to CSV
                 df.to_csv(DB_FILE, index=False)
-                st.success("Deleted successfully!")
+                st.success("Deleted!")
                 st.rerun()
-            else:
-                st.warning("Select a job first.")
 
+    st.divider()
+
+    # TAB 2: RESTORE / UPLOAD CSV
+    st.subheader("📤 Restore Data")
+    st.write("Upload a previously downloaded 'job_applications.csv' to restore your list.")
+    
+    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+    
+    if uploaded_file is not None:
+        if st.button("Load this File"):
+            # Read the uploaded file
+            try:
+                restored_df = pd.read_csv(uploaded_file)
+                # Verify it has the right columns to prevent crashing
+                required_cols = ["Company", "Role", "Status", "Date", "Notes"]
+                if all(col in restored_df.columns for col in required_cols):
+                    restored_df.to_csv(DB_FILE, index=False)
+                    st.success("Data Restored Successfully!")
+                    st.rerun()
+                else:
+                    st.error("Error: CSV format is wrong. Columns don't match.")
+            except Exception as e:
+                st.error(f"Error loading file: {e}")
+
+    # TAB 3: DOWNLOAD CURRENT DATA (Backup)
+    st.divider()
+    if os.path.exists(DB_FILE):
+        with open(DB_FILE, "rb") as f:
+            st.download_button(
+                label="⬇️ Download Backup CSV",
+                data=f,
+                file_name="job_applications_backup.csv",
+                mime="text/csv"
+            )
